@@ -1,10 +1,11 @@
 import sys
+
 import os 
 from twilio.rest import Client
 
 import pyimgur
 import pyscreenshot as ImageGrab
-
+import subprocess
 import PIL
 from PIL import Image
 import time
@@ -25,12 +26,12 @@ from PyQt5.QtCore import pyqtSlot
 class MatchBoxLineEdit(QLineEdit):
     def focusInEvent(self, e):
         try:
-            subprocess.Popen(["matchbox-keyboard"])
+            subprocess.Popen(["toggle-matchbox-keyboard.desktop"])
         except FileNotFoundError:
             pass
 
     def focusOutEvent(self,e):
-        subprocess.Popen(["killall","matchbox-keyboard"])
+        subprocess.Popen(["killall","toggle-matchbox-keyboard.desktop"])
 
 
 
@@ -52,6 +53,7 @@ class Window(QtWidgets.QWidget):
         self.button = QtWidgets.QPushButton("ENTER")
         self.button2 = QtWidgets.QPushButton("Image Capture")
         self.textbox = QtWidgets.QTextEdit()
+        self.button3 = QtWidgets.QPushButton("key board")
 
         #textbox validation
         self.textbox = QLineEdit()
@@ -59,11 +61,11 @@ class Window(QtWidgets.QWidget):
 
         #keyboard popup
         widget = QWidget()
-        lay = QVBoxLayout(widget)
+        #lay = QVBoxLayout(widget)
         #self.setCentralWidget(widget)
         self.userNameLabel = QLabel("What is your name?")
         self.nameInput = MatchBoxLineEdit()
-        lay.addWidget(self.nameInput)
+        #vBox.addWidget(self.nameInput)
 
         # astethics of GUI
         vBox = QtWidgets.QVBoxLayout()
@@ -71,18 +73,21 @@ class Window(QtWidgets.QWidget):
         vBox.addWidget(self.textbox)
         vBox.addWidget(self.button)
         vBox.addWidget(self.button2)
+        vBox.addWidget(self.button3)
         self.setLayout(vBox)
 
         #actions
         self.button.setEnabled(False)
+        #self.textbox.textChanged.connect()
         self.textbox.textChanged.connect(self.disableButton)
 
         self.button.clicked.connect(self.uploaded_file)
         self.button.clicked.connect(self.buttonClicked)
-        self.button2.clicked.connect(MatchBoxLineEdit)
 
-
-
+        #screen cap/minim/keyboard actions
+        self.button3.clicked.connect(self.focusInEvent)
+        self.button3.clicked.connect(self.focusOutEvent)
+        
         self.button2.clicked.connect(self.minimize)
         self.button2.clicked.connect(self.screenGrab)
 
@@ -105,7 +110,7 @@ class Window(QtWidgets.QWidget):
         
         client = Client(account_sid, auth_token)
         message = client.messages.create(to=number, from_="+17076402887", media_url=self.images)
-
+        
     def disableButton(self):
 
         if len(self.textbox.text()) > 0 and os.path.exists('/home/pi/screenshot.png') and len(self.textbox.text()) == 11:
@@ -156,9 +161,21 @@ class Window(QtWidgets.QWidget):
     def minimize(self):
         self.showMinimized()
 
+    def focusInEvent(self):
+        try:
+            subprocess.call(["toggle-matchbox-keyboard.sh"])
+            #print('work')
+        except FileNotFoundError:
+            pass
 
-app = QtWidgets.QApplication(sys.argv)
-ourWindow = Window()
+    def focusOutEvent(self):
+        subprocess.call(["killall","toggle-matchbox-keyboard.sh"])
 
-sys.exit(app.exec())
+#-------------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+    ourWindow = Window()
+
+    sys.exit(app.exec())
 
